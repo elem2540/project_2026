@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 class Event(SQLModel, table=True):
-    id : int = Field(primary_key=True)
+    id : int = Field(default = None, primary_key=True)
     title: str
     description: str
     date: datetime
