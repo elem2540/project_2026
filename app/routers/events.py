@@ -49,7 +49,7 @@ def add_event(session: SessionDep, event: EventCreate):
 @events_router.get("/{id}")
 def get_event_by_id(
     session: SessionDep,
-    id: Annotated[int, Path(description="The ID of the event to retrieve")]
+    id: Annotated[int, Path(description="The ID of the event to retrieve", examples=[1])]
 ) -> JSONResponse:
     """ 
     Returns the event with the given ID. 
@@ -63,9 +63,10 @@ def get_event_by_id(
                 "event_id": event.id,
                 "title": event.title,
                 "description": event.description,
-                "date": event.date,
+                "date": event.date.isoformat(),
                 "location": event.location
-        })
+            }
+        )
     else:
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -75,7 +76,7 @@ def replace_event(
     session: SessionDep,
     id: Annotated[int, Path(description="The ID of the event to replace")],
     new_event: EventCreate
-):
+) -> str:
     """ 
     Replaces the event with the given ID. 
     """
@@ -89,25 +90,14 @@ def replace_event(
     session.add(event)
     session.commit()
 
-    return JSONResponse(
-        status_code=201,
-        content={
-            "msg": "Event replaced successfully!",
-            "event_id": event.id,
-            "title": event.title,
-            "description": event.description,
-            "date": event.date,
-            "location": event.location
-        }
-    )
+    return "Event replaced successfully!"
 
 
 @events_router.post("/{id}/register")
 def add_registration(
     session: SessionDep,
     id: Annotated[int, Path(description="The ID of the event to register for")],
-    user: User,
-    user_cr: UserCreate
+    user: UserCreate
 ):
     """ 
     Registers a user for the event with the given ID.
@@ -120,7 +110,7 @@ def add_registration(
 
     username = session.get(User, user.username)
     if not username:
-        new_user = UserCreate.model_validate(user_cr)
+        new_user = User.model_validate(user)
         session.add(new_user)
         session.commit()
         username = new_user
@@ -134,14 +124,14 @@ def add_registration(
     if registration:
         raise HTTPException(status_code=400, detail="User already registered")
 
-    registration = Registration( username=username.username, event_id=event.id)
-    session.add(registration)
+    new_registration = Registration( username=username.username, event_id=event.id)
+    session.add(new_registration)
     session.commit()
 
     return JSONResponse(
         status_code=201,
         content={
-            "msg": "User registered successfully",
+            "msg": "User registered successfully!",
             "event_id": event.id
         }
     )
