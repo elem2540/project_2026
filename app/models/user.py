@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field
+from typing import Annotated
 
 
 class User(SQLModel, table=True):
