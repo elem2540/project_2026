@@ -1,0 +1,173 @@
+from fastapi import APIRouter, Path, HTTPException, Query
+from app.models.event import EventCreate, EventPublic, Event
+from app.models.user import UserCreate, User
+from app.models.registration import Registration
+
+from typing import Annotated
+from app.data.db import SessionDep
+from sqlmodel import select, delete
+from fastapi.responses import JSONResponse
+
+
+events_router = APIRouter()
+
+
+@events_router.get("/")
+def get_all_events(
+        session: SessionDep,
+        sort: Annotated[bool, Query(description="Sort events by their date")] = False
+) -> list[EventPublic]:
+    """ Returns the list of available events."""
+
+    events = session.exec(select(Event)).all()
+    if sort:
+         return sorted(events, key=lambda event: event.date)
+    else:
+        return list(events)
+
+
+@events_router.post("/")
+def add_event(session: SessionDep, event: EventCreate):
+    """ Adds a new event. """
+
+    event_entry = Event.model_validate(event)
+    session.add(event_entry)
+    session.commit()
+    return JSONResponse(
+        status_code=201,
+        content={
+            "msg": "Event added successfully",
+            "event_id": event_entry.id
+        }
+    )
+
+
+@events_router.get("/{id}")
+def get_event_by_id(
+    session: SessionDep,
+    id: Annotated[int, Path(description="The ID of the event to retrieve")]
+) -> JSONResponse:
+    """ Returns the event with the given ID. """
+
+    event = session.get(Event, id)
+    if event:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "msg": "Event retrieved successfully",
+                "event_id": event.id,
+                "title": event.title,
+                "description": event.description,
+                "date": event.date,
+                "location": event.location
+        })
+    else:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+@events_router.put("/{id}")
+def replace_event(
+    session: SessionDep,
+    id: Annotated[int, Path(description="The ID of the event to replace")],
+    new_event: EventCreate
+):
+    """ Replaces the event with the given ID. """
+
+    event = session.get(Event, id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    event.title = new_event.title
+    event.description = new_event.description
+    event.date = new_event.date
+    event.location = new_event.location
+    session.add(event)
+    session.commit()
+
+    return JSONResponse(
+        status_code=201,
+        content={
+            "msg": "Event replaced successfully",
+            "event_id": event.id,
+            "title": event.title,
+            "description": event.description,
+            "date": event.date,
+            "location": event.location
+        }
+    )
+
+@events_router.post("/{id}/register")
+def add_registration(
+    session: SessionDep,
+    id: Annotated[int, Path(description="The ID of the event to register for")],
+    user: User,
+    user_cr: UserCreate
+):
+    """ Registers a user for the event with the given ID.
+        If the user isn't in the database, it creates it. """
+
+    event = session.get(Event, id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    username = session.get(User, user.username)
+    if not username:
+        new_user = UserCreate.model_validate(user_cr)
+        session.add(new_user)
+        session.commit()
+        username = new_user
+
+    registration = session.exec(
+        select(Registration).where(
+            Registration.username == username.username,
+            Registration.event_id == event.id
+        )
+    ).first()
+    if registration:
+        raise HTTPException(status_code=400, detail="User already registered")
+
+    registration = Registration( username=username.username, event_id=event.id)
+    session.add(registration)
+    session.commit()
+
+    return JSONResponse(
+        status_code=201,
+        content={
+            "msg": "User registered successfully",
+            "event_id": event.id
+        }
+    )
+
+@events_router.delete("/")
+def delete_all_events(
+        session: SessionDep,
+):
+    """ Deletes all events. """
+
+    session.exec(delete(Event))
+    session.commit()
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "msg": "All events deleted successfully"
+        }
+    )
+
+@events_router.delete("/{id}")
+def delete_event_by_id(
+        session: SessionDep,
+        id: Annotated[int, Path(description="The ID of the event to delete")],
+):
+    """ Deletes the event with the given ID. """
+
+    event = session.get(Event, id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    session.delete(event)
+    session.commit()
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "msg": "Event deleted successfully"
+        }
+    )

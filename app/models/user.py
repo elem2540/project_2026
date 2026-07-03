@@ -6,7 +6,7 @@ class UserBase(SQLModel):
     email: str
 
 
-class User(SQLModel, table=True):
+class User(UserBase, table=True):
     username: str = Field(default = None, primary_key=True)
 
 
