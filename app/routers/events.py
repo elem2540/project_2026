@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Path, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Path, Query
 from app.models.event import EventCreate, EventPublic, Event
 from app.models.user import UserCreate, User
 from app.models.registration import Registration
@@ -9,7 +9,7 @@ from sqlmodel import select, delete
 from fastapi.responses import JSONResponse
 
 
-events_router = APIRouter()
+events_router = APIRouter(prefix="/events", tags=["events"])
 
 
 @events_router.get("/")

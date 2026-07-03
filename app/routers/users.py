@@ -8,7 +8,7 @@ from typing import Annotated
 from app.data.db import SessionDep
 from sqlmodel import select, delete
 
-router = APIRouter(prefix="/users") # all router endpoints will start from /users
+router = APIRouter(prefix="/users", tags=["users"]) # all router endpoints will start from /users
 
 @router.get("/")
 def get_all_users(    
@@ -23,7 +23,7 @@ def get_all_users(
     """
     users = session.exec(select(User)).all()
     if sort:
-        users.sort(key=lambda user: user.username)
+        users = sorted(users, key=lambda user: user.username)
     return list(users)
 
 
@@ -37,7 +37,7 @@ def add_user(
     """
     if user.username in session.exec(select(User.username)).all():
         raise HTTPException(status_code=422, detail="Username already exists")
-    new_user = User(username=user.username, password=user.password)
+    new_user = User(username=user.username, name=user.name, email=user.email)
     session.add(new_user)
     session.commit()
 
@@ -49,9 +49,11 @@ def add_user(
 
 @router.get("/{username}")
 def get_user_by_username(
-    username: Annotated[str, Query(description="The username of the user to retrieve", examples=["igor_miti"])],
+    username: Annotated[str, Path(description="The username of the user to retrieve", examples=["igor_miti"])],
     session: SessionDep
 ) -> JSONResponse:
+    """
+    Returns the user with the given username."""
     user = session.get(User, username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -86,7 +88,7 @@ def delete_all_users(
 @router.delete("/{username}")
 def delete_user_by_username(
     session: SessionDep,
-    username: Annotated[str, Path(description="Username of the user to delete", examples="jackey57")]
+    username: Annotated[str, Path(description="Username of the user to delete", examples=["jackey57"])]
 ) -> JSONResponse:
     """
     Deletes a user from the database based on their username.

@@ -23,7 +23,35 @@ def init_database() -> None:
         f = Faker("it_IT")
         with Session(engine) as session:
             # TODO: (optional) initialize the database with fake data
-            ...
+            events = []
+            for i in range(10):
+                event = Event(
+                    title=f.sentence(nb_words=5)[:30],
+                    description=f.sentence(nb_words=30)[:200],
+                    date=f.date_time_between(start_date="now", end_date="+1y"),
+                    location=f.sentence(nb_words=5)[:50]
+                )
+                session.add(event)
+                events.append(event)
+
+            users = []
+            for i in range(10):
+                user = User(
+                    username=f.user_name()[:50],
+                    name=f.name()[:30],
+                    email=f.email()[:100],
+                )
+                session.add(user)
+                users.append(user)
+
+            for i in range(3):
+                registration = Registration(
+                    event_id=events[i].id,
+                    username=users[i].username
+                )
+                session.add(registration)
+
+            session.commit()
 
 
 def get_session():

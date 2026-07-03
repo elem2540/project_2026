@@ -25,8 +25,8 @@ def get_all_registrations(
 @router.delete("/")
 def delete_registration(
     session: SessionDep,
-    username: Annotated[str, Path(description="Username of the registered user")],
-    event_id: Annotated[int, Path(description="ID of the event")],
+    username: Annotated[str, Query(description="Username of the registered user")],
+    event_id: Annotated[int, Query(description="ID of the event")],
 ):
     """
     Deletes a single registration identified by username and event_id.
