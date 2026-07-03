@@ -4,19 +4,19 @@ from typing import Annotated
 
 
 class EventBase(SQLModel):
-    title: str
-    description: str
+    title: Annotated[str, Field(min_length=1, max_length=30)]
+    description: Annotated[str, Field(min_length=1, max_length=200)]
     date: datetime
-    location: str
+    location: Annotated[str, Field(min_length=1, max_length=50)]
 
 
-class Event(SQLModel, table=True):
-    id : int = Field(default = None, primary_key=True)
+class Event(EventBase, table=True):
+    id : int = Field(default=None, primary_key=True)
 
 
 class EventCreate(EventBase):
     pass
 
 
-class EventiPublic(EventBase):
+class EventPublic(EventBase):
     id: int

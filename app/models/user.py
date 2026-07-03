@@ -3,12 +3,12 @@ from typing import Annotated
 
 
 class UserBase(SQLModel):
-    name: str
-    email: str
+    name: Annotated[str, Field(min_length=1, max_length=30)]
+    email: Annotated[str, Field(min_length=1, max_length=100)]
 
 
-class User(SQLModel, table=True):
-    username: str = Field(default = None, primary_key=True)
+class User(UserBase, table=True):
+    username: str = Field(default=None, primary_key=True)
 
 
 class UserCreate(UserBase):
@@ -16,4 +16,4 @@ class UserCreate(UserBase):
 
 
 class UserPublic(UserBase):
-    username: str
+    username: Annotated[str, Field(min_length=1, max_length=50)]
