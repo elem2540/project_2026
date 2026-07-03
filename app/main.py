@@ -39,4 +39,3 @@ app.include_router(frontend.router)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", reload=True)
-    #provaaaa
