@@ -1,18 +1,19 @@
 from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi.responses import JSONResponse
+
 from app.models.event import EventCreate, EventPublic, Event
 from app.models.user import UserCreate, User
 from app.models.registration import Registration
+from app.data.db import SessionDep
 
 from typing import Annotated
-from app.data.db import SessionDep
 from sqlmodel import select, delete
-from fastapi.responses import JSONResponse
 
 
-events_router = APIRouter(prefix="/events", tags=["events"])
+router = APIRouter(prefix="/events", tags=["events"])
 
 
-@events_router.get("/")
+@router.get("/")
 def get_all_events(
         session: SessionDep,
         sort: Annotated[bool, Query(description="Sort events by their date")] = False
@@ -27,12 +28,11 @@ def get_all_events(
         return list(events)
 
 
-@events_router.post("/")
+@router.post("/")
 def add_event(session: SessionDep, event: EventCreate):
     """ 
     Adds a new event. 
     """
-
     event_entry = Event.model_validate(event)
     session.add(event_entry)
     session.commit()
@@ -46,7 +46,7 @@ def add_event(session: SessionDep, event: EventCreate):
     )
 
 
-@events_router.get("/{id}")
+@router.get("/{id}")
 def get_event_by_id(
     session: SessionDep,
     id: Annotated[int, Path(description="The ID of the event to retrieve", examples=[1])]
@@ -60,7 +60,7 @@ def get_event_by_id(
             status_code=200,
             content={
                 "msg": "Event retrieved successfully!",
-                "event_id": event.id,
+                "id": event.id,
                 "title": event.title,
                 "description": event.description,
                 "date": event.date.isoformat(),
@@ -71,7 +71,7 @@ def get_event_by_id(
         raise HTTPException(status_code=404, detail="Event not found")
 
 
-@events_router.put("/{id}")
+@router.put("/{id}")
 def replace_event(
     session: SessionDep,
     id: Annotated[int, Path(description="The ID of the event to replace")],
@@ -93,7 +93,7 @@ def replace_event(
     return "Event replaced successfully!"
 
 
-@events_router.post("/{id}/register")
+@router.post("/{id}/register")
 def add_registration(
     session: SessionDep,
     id: Annotated[int, Path(description="The ID of the event to register for")],
@@ -103,7 +103,6 @@ def add_registration(
     Registers a user for the event with the given ID.
     If the user isn't in the database, it creates it. 
     """
-
     event = session.get(Event, id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -137,14 +136,14 @@ def add_registration(
     )
 
 
-@events_router.delete("/")
+@router.delete("/")
 def delete_all_events(
         session: SessionDep,
 ):
     """
     Deletes all events. 
     """
-
+    session.exec(delete(Registration))
     session.exec(delete(Event))
     session.commit()
 
@@ -156,24 +155,24 @@ def delete_all_events(
     )
 
 
-@events_router.delete("/{id}")
+@router.delete("/{id}")
 def delete_event_by_id(
         session: SessionDep,
         id: Annotated[int, Path(description="The ID of the event to delete")],
-):
+) -> JSONResponse:
     """ 
     Deletes the event with the given ID. 
     """
-
     event = session.get(Event, id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    session.exec(delete(Registration).where(Registration.event_id == id))
     session.delete(event)
     session.commit()
 
     return JSONResponse(
         status_code=200,
         content={
-            "msg": "Event deleted successfully"
+            "msg": "Event deleted successfully!"
         }
     )

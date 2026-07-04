@@ -8,7 +8,9 @@ from typing import Annotated
 from app.data.db import SessionDep
 from sqlmodel import select, delete
 
+
 router = APIRouter(prefix="/users", tags=["users"]) # all router endpoints will start from /users
+
 
 @router.get("/")
 def get_all_users(    
@@ -61,7 +63,7 @@ def get_user_by_username(
     return JSONResponse(
         content={
         "msg": "User found",
-        "user": user.username,
+        "username": user.username,
         "name": user.name,
         "email": user.email
         }, 
