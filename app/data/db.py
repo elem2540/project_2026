@@ -29,7 +29,7 @@ def init_database() -> None:
                     title=f.sentence(nb_words=5)[:30],
                     description=f.sentence(nb_words=30)[:200],
                     date=f.date_time_between(start_date="now", end_date="+1y"),
-                    location=f.sentence(nb_words=5)[:50]
+                    location=f.city()[:50]
                 )
                 session.add(event)
                 events.append(event)
@@ -43,6 +43,7 @@ def init_database() -> None:
                 )
                 session.add(user)
                 users.append(user)
+            session.flush()
 
             for i in range(3):
                 registration = Registration(
